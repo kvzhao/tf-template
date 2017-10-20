@@ -141,7 +141,7 @@ def train(sess, train_data, val_data, model, FLAGS):
                 val_seqs, val_labs = val_data.next_batch(FLAGS.val_batch_size)
 
                 eval_loss, accuracy, summary = model.eval_step(sess, val_seqs, val_labs)
-                # Only write evalidation results to summary
+                # Only write evalidation results on Tensorboard
                 log_writer.add_summary(summary, model.global_step.eval())
                 print ("Step [ {} ]: validation loss = {}".format(step, eval_loss))
             
@@ -184,10 +184,7 @@ def main():
             train(sess, train_data, val_data, model, FLAGS)
             print ("Training Done.")
         else:
-            print ("The inference mode is removed from run_rnn.py")
-            """Evaluate results with validation dataset. (or whole training set)
-                Measure: Average Phone Sequence Edit Distance
-            """
+            print ("The inference mode is removed from inference.py")
 
 if __name__ == "__main__":
     main()

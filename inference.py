@@ -44,7 +44,7 @@ def load_model(sess, saved_path):
     return model
 
 def inference(sess, test_data, model):
-    """Used for generate submittion
+    """Used to predict results on test dataset
     """
     # Prepare path to output
     OUTS=[]
@@ -56,6 +56,8 @@ def inference(sess, test_data, model):
     return OUTS
 
 def evaluation(results, targets):
+    """Calculate accuracy with labels and predicted classes
+    """
     accuracy = 0
     for yhat, y in zip(results, targets):
         if yhat == y:
@@ -66,6 +68,7 @@ def evaluation(results, targets):
 def main():
     gpu_options = tf.GPUOptions(allow_growth=True)
 
+    print ("Start loading test dataset...")
     mnist = input_data.read_data_sets(FLAGS.data_path, one_hot=False)
     test_data = mnist.test.images
     targets = mnist.test.labels
@@ -74,11 +77,16 @@ def main():
 
 
     with tf.Session(config=tf.ConfigProto(gpu_options=gpu_options)) as sess:
+        print ("Loading the trained model...")
         model = load_model(sess, FLAGS.model_path)
+        print ("Done.")
+
+        print ("Predicting ...")
         results = inference(sess, test_data, model)
+        print ("Done.")
 
         acc = evaluation(results, targets)
-        print ("Accuracy of test {}".format(acc))
+        print ("Accuracy of on testing dataset: {}".format(acc))
 
 if __name__ == "__main__":
     main()
