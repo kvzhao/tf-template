@@ -66,7 +66,7 @@ class LinearModel(object):
             print ("Define Loss function")
             with tf.variable_scope("Loss"):
                 onehot_labels = tf.one_hot(indices=tf.cast(self.label, tf.int32), depth=self.num_categories)
-                self.loss = tf.reduce_sum(tf.nn.softmax_cross_entropy_with_logits(labels=onehot_labels, logits=self.logits))
+                self.loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=onehot_labels, logits=self.logits))
                 self.accuracy = tf.reduce_mean(tf.cast(tf.equal(self.preds, tf.argmax(onehot_labels, 1)), tf.float32))
 
             # initialize optimizer in train mode
@@ -83,7 +83,7 @@ class LinearModel(object):
             TODO: learning rate decay
         """
         if self.mode == "train":
-            print ("Initialize Optimizer ({})".format(self.optimizer_type))
+            print ("Initialize Optimizer ({}), learning_rate: {}".format(self.optimizer_type, self.learning_rate))
             train_params = tf.trainable_variables()
 
             with tf.variable_scope("Solver"):
@@ -108,9 +108,10 @@ class LinearModel(object):
             raise ValueError ('Train step function can only used in train mode.')
         input_feed = {self.input: input_batch, 
                         self.label: target_batch}
-        output_feed = [self.updates, self.loss]
-        outs = sess.run(output_feed, input_feed)
-        return outs[1]
+        sess.run(self.updates, input_feed)
+        output_feed = [self.loss, self.accuracy, self.summary_op]
+        outputs = sess.run(output_feed, input_feed)
+        return outputs
 
     def eval_step(self, sess, input_batch, target_batch):
         # these data should come from test samples
