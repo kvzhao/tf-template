@@ -113,7 +113,8 @@ def train(sess, train_data, val_data, model, FLAGS):
 
     # Path
     model_path = os.path.join(FLAGS.logdir, FLAGS.task_name)
-    log_writer = tf.summary.FileWriter(model_path, sess.graph)
+    val_log_writer = tf.summary.FileWriter(model_path + '/val', sess.graph)
+    train_log_writer = tf.summary.FileWriter(model_path + '/train', sess.graph)
 
     print ("Start Training...")
     train_loss_hist = []
@@ -129,21 +130,26 @@ def train(sess, train_data, val_data, model, FLAGS):
 
             batch_seqs, batch_labs = train_data.next_batch(FLAGS.batch_size)
 
-            step_loss = model.train_step(sess, batch_seqs, batch_labs)
+            step_loss, train_accuracy, train_summary = model.train_step(sess, batch_seqs, batch_labs)
             epoch_loss += step_loss
+
+            ## ray try
+            train_loss_accumulate = np.append(train_loss_accumulate, step_loss)
+            train_accuracy_accumulate = np.append(train_accuracy_accumulate, train_accuracy)
 
             # Display loss information
             if step % FLAGS.display_freq == 0:
-                print ("Step [ {} ]: training loss = {}".format(step, step_loss))
+                train_log_writer.add_summary(train_summary, model.global_step.eval())
+                print ("Step [ {} ]: training loss:   {:.3f}  |  training accuracy:   {:.3f}".format(
+                        step, float(np.mean(train_loss_accumulate)), float(np.mean(train_accuracy_accumulate))))
 
             # Evaluation (Validation)
             if step % FLAGS.eval_freq == 0:
                 val_seqs, val_labs = val_data.next_batch(FLAGS.val_batch_size)
-
-                eval_loss, accuracy, summary = model.eval_step(sess, val_seqs, val_labs)
-                # Only write evalidation results on Tensorboard
-                log_writer.add_summary(summary, model.global_step.eval())
-                print ("Step [ {} ]: validation loss = {}".format(step, eval_loss))
+                val_seqlens = np.array([feat_dim] * FLAGS.val_batch_size, dtype=np.int32)
+                eval_loss, accuracy, val_summary = model.eval_step(sess, val_seqs, val_labs)
+                val_log_writer.add_summary(val_summary, model.global_step.eval())
+                print ("Step [ {} ]: validation loss: {:.3f}  |  validation accuracy: {:.3f}".format(step, eval_loss, accuracy))
             
         # End of step loop --- 
 
